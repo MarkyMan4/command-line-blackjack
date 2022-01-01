@@ -93,18 +93,16 @@ class Game:
         print('    q - quit the game')
         print()
 
-    def handle_player_won_round(self):
-        print('**You won!**')
-        print(f'Your total is {self.player.get_card_total()}')
-        print(f"The dealer's total is {self.dealer.get_card_total()}")
-
-        # add double the amount of points bet since the bet has already been subtracted from points
-        self.player.points += self.player.bet * 2
-
-    def handle_player_lost_round(self):
-        print('**You lost!**')
-        print(f'Your total is {self.player.get_card_total()}')
-        print(f"The dealer's total is {self.dealer.get_card_total()}")
+    def handle_win_or_lose_round(self, player_won):
+        if player_won:
+            print('**You won!**')
+            # add double the amount of points bet since the bet has already been subtracted from points
+            self.player.points += self.player.bet * 2
+        else:
+            print('**You lost!**')
+        
+        print(f'Your total is {self.player.get_card_total()} {"(bust)" if self.player.get_card_total() > 21 else ""}')
+        print(f"The dealer's total is {self.dealer.get_card_total()} {'(bust)' if self.dealer.get_card_total() > 21 else ''}")
 
     def handle_draw_round(self):
         print('Draw')
@@ -114,29 +112,29 @@ class Game:
 
     # play the dealers hand and finish the round
     def end_round(self, player_busted=False):
-        player_total = self.player.get_card_total()
-        dealer_total = self.dealer.get_card_total()
-        
         if player_busted:
-            self.handle_player_lost_round()
+            self.handle_win_or_lose_round(player_won=False)
         else:
             # play the dealers hand and show their cards and score
             self.play_dealer_hand()
+            
+            # get final totals for player and dealer
+            player_total = self.player.get_card_total()
+            dealer_total = self.dealer.get_card_total()
+
             print("dealer's final hand")
             print('-----------')
             for card in self.dealer.cards:
                 print(card)
             
             print()
-            print(f"dealer's hand total: {self.dealer.get_card_total()}")
-            print()
 
             dealer_busted = dealer_total > 21
 
             if player_total > dealer_total or dealer_busted:
-                self.handle_player_won_round()
+                self.handle_win_or_lose_round(player_won=True)
             elif not dealer_busted and (player_total < dealer_total or player_busted):
-                self.handle_player_lost_round()
+                self.handle_win_or_lose_round(player_won=False)
             else:
                 self.handle_draw_round()
 
@@ -156,13 +154,15 @@ class Game:
         # play the dealers hand
         # if their hand is 16 or less, they hit, otherwise stay
         while self.dealer.get_card_total() <= 16:
-            self.dealer.give_card(self.deck.deal_card())
+            self.dealer.give_card(self.get_card())
 
     def handle_command(self, command):
         print()
 
         if command == 'h':
-            self.player.give_card(self.deck.deal_card())
+            # give the player a card and show their new hand
+            self.player.give_card(self.get_card())
+            self.show_player_hand()
 
             if self.player.get_card_total() > 21:
                 print('You busted!\n')
@@ -181,6 +181,17 @@ class Game:
         else:
             print("Enter a valid command. Type 'help' to see your options.\n")
 
+    def get_card(self):
+        # gets the next card from the deck. If the draw pile is empty, it will reset the deck and deal from there
+        card = self.deck.deal_card()
+
+        if not card:
+            self.deck.reset_deck()
+            self.deck.shuffle()
+            card = self.deck.deal_card()
+
+        return card
+
     def play(self):
         # main loop
         while True:
@@ -188,8 +199,8 @@ class Game:
 
             # both dealer and player start with two cards
             for _ in range(2):
-                self.player.give_card(self.deck.deal_card())
-                self.dealer.give_card(self.deck.deal_card())
+                self.player.give_card(self.get_card())
+                self.dealer.give_card(self.get_card())
             
             self.show_dealer_hand()
             self.show_player_hand()

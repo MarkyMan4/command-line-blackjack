@@ -1,6 +1,7 @@
 from deck.card import Card
 import random
 
+# TODO: keep track of discard pile, so if the deck is reset while some cards are still in play, it won't duplicate those cards
 class Deck:
     _suits = [
         'spades',
@@ -50,5 +51,11 @@ class Deck:
         random.shuffle(self._cards)
 
     # remove a card from the deck
+    # return None if the deck is empty. The caller can use reset_deck() to get a full deck again
     def deal_card(self):
-        return self._cards.pop()
+        card = None
+
+        if len(self._cards) > 0:
+            card = self._cards.pop()
+        
+        return card
